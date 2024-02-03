@@ -29,9 +29,9 @@ function! slime#targets#neovim#config() abort
     if exists("g:slime_get_jobid")
       let id_in = g:slime_get_jobid()
     else
-      let default_jid = b:slime_config["jobid"]
-      if !empty(default_jid)
-        let default_jid = str2nr(default_jobid)
+      let default_jobid = b:slime_config["jobid"]
+      if !empty(default_jobid)
+        let default_jobid = str2nr(default_jobid)
       end
       let id_in = input("jobid: ", default_jobid)
       let id_in = str2nr(id_in)
