@@ -223,9 +223,10 @@ function! s:last_channel_to_pid_string(ArgLead, CmdLine, CursorPos)
   return join(jobpids,"\n")
 endfunction
 
-
-
-
+" Checks if a previous channel does not exist or is empty.
+function! s:NotExistsLastChannel() abort
+  return (!exists("g:slime_last_channel") || (len(g:slime_last_channel)) < 1)
+endfunction
 
 
 
