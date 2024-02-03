@@ -23,23 +23,23 @@ function! slime#targets#neovim#config() abort
     if !empty(default_pid)
       let default_pid = str2nr(default_pid)
     endif
-    let pid_in = input("Configuring vim-slime. Input pid: ", default_pid)
-    let id_in = s:translate_pid_to_id(pid_in)
+    let pid_in = input("Configuring vim-slime. Input pid: ", default_pid , 'custom,s:last_channel_to_pid_string')
+    let jobid_in = str2nr(s:translate_pid_to_id(pid_in))
   else
     if exists("g:slime_get_jobid")
-      let id_in = g:slime_get_jobid()
+      let jobid_in = g:slime_get_jobid()
     else
       let default_jobid = b:slime_config["jobid"]
       if !empty(default_jobid)
         let default_jobid = str2nr(default_jobid)
       endif
-      let id_in = input("Configuring vim-slime. Input jobid: ", default_jobid)
-      let id_in = str2nr(id_in)
+      let jobid_in = input("Configuring vim-slime. Input jobid: ", default_jobid, 'custom,s:last_channel_to_jobid_string')
+      let jobid_in = str2nr(jobid_in)
     endif
-    let pid_in = s:translate_id_to_pid(id_in)
+    let pid_in = s:translate_id_to_pid(jobid_in)
   endif
 
-  let b:slime_config["jobid"] = id_in
+  let b:slime_config["jobid"] = jobid_in
   let b:slime_config["pid"] = pid_in
 
   if exists("b:slime_config")
