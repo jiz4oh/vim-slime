@@ -3,16 +3,17 @@ function! slime#targets#neovim#config() abort
 
   " unlet current config if its jobid doesn't exist
   if exists("b:slime_config")
-    let bufinfo = s:get_filter_bufinfo()
-    let current_jobid = get(b:slime_config, "jobid", "-1")
-    if index(bufinfo, current_jobid) == -1
+    if !s:ValidConfig(b:slime_config)
       unlet b:slime_config
     endif
   endif
 
   if !exists("b:slime_config")
-    let last_pid = get(get(get(g:, 'slime_last_channel', []), -1, {}), 'pid', '')
-    let last_job = get(get(get(g:, 'slime_last_channel', []), -1, {}), 'jobid', '')
+    let last_channels = get(g:, 'slime_last_channel', [])
+    let most_recent_channel = get(last_channels, -1, {})
+
+    let last_pid = get(most_recent_channel, 'pid', '')
+    let last_job = get(most_recent_channel, 'jobid', '')
     let b:slime_config =  {"jobid":  last_job, "pid": last_pid }
   endif
 
@@ -30,28 +31,42 @@ function! slime#targets#neovim#config() abort
     else
       let default_jid = b:slime_config["jobid"]
       if !empty(default_jid)
-        let default_jid = str2nr(default_jid)
+        let default_jid = str2nr(default_jobid)
       end
-      let id_in = input("jobid: ", default_jid)
+      let id_in = input("jobid: ", default_jobid)
       let id_in = str2nr(id_in)
     endif
     let pid_in = s:translate_id_to_pid(id_in)
-  endif
+  endi
 
   let b:slime_config["jobid"] = id_in
   let b:slime_config["pid"] = pid_in
+
+  if exists("b:slime_config")
+    if !s:ValidConfig(b:slime_config)
+      unlet b:slime_config
+    endif
+  endif
+
 endfunction
 
 function! slime#targets#neovim#send(config, text)
-  " Neovim jobsend is fully asynchronous, it causes some problems with
-  " iPython %cpaste (input buffering: not all lines sent over)
-  " So this `write_paste_file` can help as a small lock & delay
-  call slime#common#write_paste_file(a:text)
-  call chansend(str2nr(a:config["jobid"]), split(a:text, "\n", 1))
-  " if b:slime_config is {"jobid": ""} and not configured
-  " then unset it for automatic configuration next time
-  if b:slime_config["jobid"]  == ""
-    unlet b:slime_config
+  if  s:ValidConfig()
+
+    " Neovim jobsend is fully asynchronous, it causes some problems with
+    " iPython %cpaste (input buffering: not all lines sent over)
+    " So this `write_paste_file` can help as a small lock & delay
+    call slime#common#write_paste_file(a:text)
+    call chansend(str2nr(a:config["jobid"]), split(a:text, "\n", 1))
+    " if b:slime_config is {"jobid": ""} and not configured
+    " then unset it for automatic configuration next time
+    if b:slime_config["jobid"]  == ""
+      unlet b:slime_config
+    endif
+
+
+  else "remove invalid configs
+      unlet b:slime_config
   endif
 endfunction
 
@@ -128,4 +143,60 @@ function! s:translate_id_to_pid(id)
     let pid_out = -1
   endtry
   return pid_out
+endfunction
+
+
+" "checks that a configuration is valid
+" returns boolean of whether the supplied config is valid
+function! s:ValidConfig(config) abort
+
+  if s:NotExistsLastChannel()
+    echo "\nTerminal not detected."
+    return 0
+  endif
+
+  if !exists("a:config") ||  a:config is v:null
+    echo "\nConfig does not exist."
+    return 0
+  endif
+
+  " Ensure the config is a dictionary and a previous channel exists
+  if type(a:config) != v:t_dict
+    echo "\nConfig type not valid."
+    return 0
+  endif
+
+  if empty(a:config)
+    echo "\nConfig is empty."
+    return 0
+  endif
+
+  " Ensure the correct keys exist within the configuration
+  if !(has_key(a:config, 'jobid'))
+    echo "\nConfigration object lacks 'jobid'."
+    return 0
+  endif
+
+  if a:config["jobid"] == -1  "the id wasn't found translate_pid_to_id
+    echo "\nNo matching job id for the provided pid."
+    return 0
+  endif
+
+  if !(index( s:channel_to_array(g:slime_last_channel), a:config['jobid']) >= 0)
+    echo "\nJob ID not found."
+    return 0
+  endif
+
+  if !(index(s:get_filter_bufinfo(), a:config['jobid']) >= 0)
+    echo "\nJob ID not found."
+    return 0
+  endif
+
+  if empty(jobpid(a:config['jobid']))
+    echo "\nJob ID not linked to a PID."
+    return 0
+  endif
+
+  return 1
+
 endfunction
