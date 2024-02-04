@@ -228,7 +228,7 @@ function! s:ValidConfig(config, silent) abort
 endfunction
 
 
-"evaluates whether ther is a terminal running; if there isn't then no config can be valid
+"evaluates whether there is a terminal running; if there isn't then no config can be valid
 function! s:ValidEnv() abort
   if s:NotExistsLastChannel()
     echo "Terminal not detected."
