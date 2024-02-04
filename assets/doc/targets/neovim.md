@@ -9,7 +9,7 @@ let g:slime_target = "neovim"
 
 #### Manual/Prompted Configuration
 
-When you invoke `vim-slime` for the first time, you will be prompted for more configuration. The last terminal you opened before calling vim-slime will determine which `job-id` is presented as default. If that terminal is closed, one of the previously opened terminals will be suggested on subsequent configurations. The user can tab through a popup menu of valid configuration values. Unless the user uses `escape`s (presses the escape key) from the input, the default presented option will be used.
+When you invoke `vim-slime` for the first time, you will be prompted for more configuration. The last terminal you opened before calling vim-slime will determine which `job-id` is presented as default. If that terminal is closed, one of the previously opened terminals will be suggested on subsequent configurations. The user can tab through a popup menu of valid configuration values.
 
 To use the terminal's PID as input instead of Neovim's internal job-id of the terminal:
 
