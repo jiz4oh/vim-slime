@@ -25,7 +25,7 @@ function! slime#targets#neovim#config() abort
       if !empty(default_pid)
         let default_pid = str2nr(default_pid)
       endif
-      let pid_in = input("Configuring vim-slime. Input pid: ", default_pid , 'custom,Last_channel_to_pid_string')
+      let pid_in = input("Configuring vim-slime. Input pid: ", default_pid , 'customlist,Last_channel_to_pid')
       let jobid_in = str2nr(s:translate_pid_to_id(pid_in))
     else
       if exists("g:slime_get_jobid")
@@ -35,7 +35,7 @@ function! slime#targets#neovim#config() abort
         if !empty(default_jobid)
           let default_jobid = str2nr(default_jobid)
         endif
-        let jobid_in = input("Configuring vim-slime. Input jobid: ", default_jobid, 'custom,Last_channel_to_jobid_string')
+        let jobid_in = input("Configuring vim-slime. Input jobid: ", default_jobid, 'customlist,Last_channel_to_jobid')
         let jobid_in = str2nr(jobid_in)
       endif
       let pid_in = s:translate_id_to_pid(jobid_in)
@@ -243,19 +243,21 @@ endfunction
 
 " Transforms a channel dictionary with job id and pid into an newline separated string  of job IDs.
 " for the purposes of input completion
-function! Last_channel_to_jobid_string(ArgLead, CmdLine, CursorPos)
+function! Last_channel_to_jobid(ArgLead, CmdLine, CursorPos)
   let jobids = s:last_channel_to_jobid_array(g:slime_last_channel)
-  return join(jobids,"\n")
+  call map(jobids, {_, val -> string(val)})
+  return jobids
 endfunction
 
 " Transforms a channel dictionary with job ida and pid into an newline separated string  of job PIDs.
 " for the purposes of input completion
-function! Last_channel_to_pid_string(ArgLead, CmdLine, CursorPos)
-  "they will be transformed into pids so caling them by their final identity
-  let job_pids = map(copy(g:slime_last_channel), {_, val -> val["jobid"]})
-  map(job_pids, {_, val -> s:translate_id_to_pid(val)})
-  call filter(job_pids, {_,val -> val != -1})
-  return join(jobpids,"\n")
+function! Last_channel_to_pid(ArgLead, CmdLine, CursorPos)
+  "they will be transformed into pids so naming them by their final identity
+  let jobpids = map(copy(g:slime_last_channel), {_, val -> val["jobid"]})
+  call map(jobpids, {_, val -> s:translate_id_to_pid(val)})
+  call filter(jobpids, {_,val -> val != -1})
+  call map(jobpids, {_, val -> string(val)})
+  return jobpids
 endfunction
 
 " Checks if a previous channel does not exist or is empty.
