@@ -122,24 +122,6 @@ endfunction
 
 
 
-function! s:translate_pid_to_id(pid)
-  for ch in g:slime_last_channel
-    if ch['pid'] == a:pid
-      return ch['jobid']
-    endif
-  endfor
-  return -1
-endfunction
-
-function! s:translate_id_to_pid(id)
-  let pid_out = -1
-  try
-    let pid_out = jobpid(a:id)
-  catch /E900: Invalid channel id/
-    let pid_out = -1
-  endtry
-  return pid_out
-endfunction
 
 "evaluates whether there is a terminal running; if there isn't then no config can be valid
 function! s:ValidEnv() abort
@@ -223,6 +205,30 @@ function! s:ValidConfig(config, silent) abort
 
 endfunction
 
+function! s:translate_pid_to_id(pid)
+  for ch in g:slime_last_channel
+    if ch['pid'] == a:pid
+      return ch['jobid']
+    endif
+  endfor
+  return -1
+endfunction
+
+function! s:translate_id_to_pid(id)
+  let pid_out = -1
+  try
+    let pid_out = jobpid(a:id)
+  catch /E900: Invalid channel id/
+    let pid_out = -1
+  endtry
+  return pid_out
+endfunction
+
+" Checks if a previous channel does not exist or is empty.
+function! s:NotExistsLastChannel() abort
+  return (!exists("g:slime_last_channel") || (len(g:slime_last_channel)) < 1)
+endfunction
+
 function! s:get_terminal_jobids()
   let bufinfo = getbufinfo()
   "getting terminal buffers
@@ -260,10 +266,6 @@ function! Last_channel_to_pid(ArgLead, CmdLine, CursorPos)
   return jobpids
 endfunction
 
-" Checks if a previous channel does not exist or is empty.
-function! s:NotExistsLastChannel() abort
-  return (!exists("g:slime_last_channel") || (len(g:slime_last_channel)) < 1)
-endfunction
 
 " clears all buffers with a certain invalid configuration
 function! s:clear_related_bufs(id_in)
