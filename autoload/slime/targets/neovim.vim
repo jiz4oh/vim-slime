@@ -105,7 +105,7 @@ function! slime#targets#neovim#SlimeClearChannel()
       unlet b:slime_config
     endif
   else
-    let bufinfo = s:get_filter_bufinfo()
+    let bufinfo = s:get_terminal_jobids()
 
     " tests if using a version of Neovim that
     " doesn't automatically close buffers when closed
@@ -121,18 +121,6 @@ endfunction
 
 
 
-function! s:get_filter_bufinfo()
-  let bufinfo = getbufinfo()
-  "getting terminal buffers
-
-  call filter(bufinfo, {_, val -> has_key(val['variables'], "terminal_job_id")
-        \ && has_key(val['variables'], "terminal_job_pid")
-        \    && get(val,"listed",0)})
-  " only need the job id
-  call map(bufinfo, {_, val -> val["variables"]["terminal_job_id"] })
-
-  return bufinfo
-endfunction
 
 function! s:translate_pid_to_id(pid)
   for ch in g:slime_last_channel
@@ -209,7 +197,7 @@ function! s:ValidConfig(config, silent) abort
     return 0
   endif
 
-  if !(index(s:get_filter_bufinfo(), a:config['jobid']) >= 0)
+  if !(index(s:get_terminal_jobids(), a:config['jobid']) >= 0)
     if !a:silent
       echo "\nJob ID not found."
     endif
@@ -227,6 +215,18 @@ function! s:ValidConfig(config, silent) abort
 
 endfunction
 
+function! s:get_terminal_jobids()
+  let bufinfo = getbufinfo()
+  "getting terminal buffers
+
+  call filter(bufinfo, {_, val -> has_key(val['variables'], "terminal_job_id")
+        \ && has_key(val['variables'], "terminal_job_pid")
+        \    && get(val,"listed",0)})
+  " only need the job id
+  call map(bufinfo, {_, val -> val["variables"]["terminal_job_id"] })
+
+  return bufinfo
+endfunction
 
 "evaluates whether there is a terminal running; if there isn't then no config can be valid
 function! s:ValidEnv() abort
