@@ -141,6 +141,14 @@ function! s:translate_id_to_pid(id)
   return pid_out
 endfunction
 
+"evaluates whether there is a terminal running; if there isn't then no config can be valid
+function! s:ValidEnv() abort
+  if s:NotExistsLastChannel()
+    echo "Terminal not detected."
+    return 0
+  endif
+  return 1
+endfunction
 
 " "checks that a configuration is valid
 " returns boolean of whether the supplied config is valid
@@ -228,14 +236,6 @@ function! s:get_terminal_jobids()
   return bufinfo
 endfunction
 
-"evaluates whether there is a terminal running; if there isn't then no config can be valid
-function! s:ValidEnv() abort
-  if s:NotExistsLastChannel()
-    echo "Terminal not detected."
-    return 0
-  endif
-  return 1
-endfunction
 
 function! s:last_channel_to_jobid_array(channel_dict)
   return map(copy(a:channel_dict), {_, val -> val["jobid"]})
