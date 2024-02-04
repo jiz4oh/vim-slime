@@ -1,58 +1,63 @@
 
 function! slime#targets#neovim#config() abort
   " unlet current config if its jobid doesn't exist
-  if exists("b:slime_config")
-    if !s:ValidConfig(b:slime_config)
-      call s:sure_clear_buf_config()
-      unlet b:slime_config
-    endif
-
-  endif
-
-  if !exists("b:slime_config")
-    let last_channels = get(g:, 'slime_last_channel', [])
-    let most_recent_channel = get(last_channels, -1, {})
-
-    let last_pid = get(most_recent_channel, 'pid', '')
-    let last_job = get(most_recent_channel, 'jobid', '')
-    let b:slime_config =  {"jobid":  last_job, "pid": last_pid }
-  endif
-
-  " include option to input pid
-  if exists("g:slime_input_pid") && g:slime_input_pid
-    let default_pid = jobpid(b:slime_config["jobid"])
-    if !empty(default_pid)
-      let default_pid = str2nr(default_pid)
-    endif
-    let pid_in = input("Configuring vim-slime. Input pid: ", default_pid , 'custom,s:last_channel_to_pid_string')
-    let jobid_in = str2nr(s:translate_pid_to_id(pid_in))
-  else
-    if exists("g:slime_get_jobid")
-      let jobid_in = g:slime_get_jobid()
-    else
-      let default_jobid = b:slime_config["jobid"]
-      if !empty(default_jobid)
-        let default_jobid = str2nr(default_jobid)
+  if s:ValidEnv()
+    if exists("b:slime_config")
+      if !s:ValidConfig(b:slime_config, 1)
+        call s:sure_clear_buf_config()
+        unlet b:slime_config
       endif
-      let jobid_in = input("Configuring vim-slime. Input jobid: ", default_jobid, 'custom,s:last_channel_to_jobid_string')
-      let jobid_in = str2nr(jobid_in)
-    endif
-    let pid_in = s:translate_id_to_pid(jobid_in)
-  endif
 
-  let b:slime_config["jobid"] = jobid_in
-  let b:slime_config["pid"] = pid_in
-
-  if exists("b:slime_config")
-    if !s:ValidConfig(b:slime_config)
-      call s:sure_clear_buf_config()
     endif
+
+    if !exists("b:slime_config")
+      let last_channels = get(g:, 'slime_last_channel', [])
+      let most_recent_channel = get(last_channels, -1, {})
+
+      let last_pid = get(most_recent_channel, 'pid', '')
+      let last_job = get(most_recent_channel, 'jobid', '')
+      let b:slime_config =  {"jobid":  last_job, "pid": last_pid }
+    endif
+
+    " include option to input pid
+    if exists("g:slime_input_pid") && g:slime_input_pid
+      let default_pid = jobpid(b:slime_config["jobid"])
+      if !empty(default_pid)
+        let default_pid = str2nr(default_pid)
+      endif
+      let pid_in = input("Configuring vim-slime. Input pid: ", default_pid , 'custom,s:last_channel_to_pid_string')
+      let jobid_in = str2nr(s:translate_pid_to_id(pid_in))
+    else
+      if exists("g:slime_get_jobid")
+        let jobid_in = g:slime_get_jobid()
+      else
+        let default_jobid = b:slime_config["jobid"]
+        if !empty(default_jobid)
+          let default_jobid = str2nr(default_jobid)
+        endif
+        let jobid_in = input("Configuring vim-slime. Input jobid: ", default_jobid, 'custom,s:last_channel_to_jobid_string')
+        let jobid_in = str2nr(jobid_in)
+      endif
+      let pid_in = s:translate_id_to_pid(jobid_in)
+    endif
+
+    let b:slime_config["jobid"] = jobid_in
+    let b:slime_config["pid"] = pid_in
+
+    if exists("b:slime_config")
+      if !s:ValidConfig(b:slime_config, 0)
+        call s:sure_clear_buf_config()
+      endif
+    endif
+  else
+    " so we don't get an error from the base send function
+    let b:slime_config = {}
   endif
 
 endfunction
 
 function! slime#targets#neovim#send(config, text)
-  if  s:ValidConfig(a:config)
+  if  s:ValidConfig(a:config,1)
 
     " Neovim jobsend is fully asynchronous, it causes some problems with
     " iPython %cpaste (input buffering: not all lines sent over)
@@ -151,52 +156,70 @@ endfunction
 
 " "checks that a configuration is valid
 " returns boolean of whether the supplied config is valid
-function! s:ValidConfig(config) abort
+function! s:ValidConfig(config, silent) abort
 
   if s:NotExistsLastChannel()
-    echo "\nTerminal not detected."
+    if !a:silent
+      echo "\nTerminal not detected."
+    endif
     return 0
   endif
 
   if !exists("a:config") ||  a:config is v:null
-    echo "\nConfig does not exist."
+    if !a:silent
+      echo "\nConfig does not exist."
+    endif
     return 0
   endif
 
   " Ensure the config is a dictionary and a previous channel exists
   if type(a:config) != v:t_dict
-    echo "\nConfig type not valid."
+    if !a:silent
+      echo "\nConfig type not valid."
+    endif
     return 0
   endif
 
   if empty(a:config)
-    echo "\nConfig is empty."
+    if !a:silent
+      echo "\nConfig is empty."
+    endif
     return 0
   endif
 
   " Ensure the correct keys exist within the configuration
   if !(has_key(a:config, 'jobid'))
-    echo "\nConfigration object lacks 'jobid'."
+    if !a:silent
+      echo "\nConfigration object lacks 'jobid'."
+    endif
     return 0
   endif
 
   if a:config["jobid"] == -1  "the id wasn't found translate_pid_to_id
-    echo "\nNo matching job id for the provided pid."
+    if !a:silent
+      echo "\nNo matching job id for the provided pid."
+    endif
     return 0
   endif
 
   if !(index( s:last_channel_to_jobid_array(g:slime_last_channel), a:config['jobid']) >= 0)
-    echo "\nJob ID not found."
+    if !a:silent
+      echo "\nJob ID not found."
+    endif
     return 0
   endif
 
   if !(index(s:get_filter_bufinfo(), a:config['jobid']) >= 0)
-    echo "\nJob ID not found."
+    if !a:silent
+      echo "\nJob ID not found."
+    endif
     return 0
   endif
 
   if empty(jobpid(a:config['jobid']))
-    echo "\nJob ID not linked to a PID."
+    if !a:silent
+      echo "\nJob ID not linked to a PID."
+    endif
     return 0
   endif
 
@@ -204,6 +227,15 @@ function! s:ValidConfig(config) abort
 
 endfunction
 
+
+"evaluates whether ther is a terminal running; if there isn't then no config can be valid
+function! s:ValidEnv() abort
+  if s:NotExistsLastChannel()
+    echo "Terminal not detected."
+    return 0
+  endif
+  return 1
+endfunction
 
 function! s:last_channel_to_jobid_array(channel_dict)
   return map(copy(a:channel_dict), {_, val -> val["jobid"]})
