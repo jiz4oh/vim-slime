@@ -49,6 +49,8 @@ nmap <leader>s <Plug>SlimeMotionSend
 
 "send line
 nmap <leader>ss <Plug>SlimeLineSend
+"send the whole file
+nmap <silent> <leader>sf :%SlimeSend<CR>
 ```
 
 Of course these mappings are just examples; you can set them according to your preference.
